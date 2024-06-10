@@ -1,9 +1,3 @@
-initialise portfolio with 100k
+# Durham University Finance Society trading simulator
 
-for each stamp,
-
-    for each product at that time stamp,
-        set the listing price, quantity, symbol
-
-    run the trader class
-    update portfolio with outcome
+This project aims to aid the education of DUFS Quant Fund members in financial markets by providing users an OOP environment to create strategies tested on artificial market data.
