@@ -3,24 +3,10 @@ from dataimport import *
 from Runscript import *
 from datetime import datetime
 
+
+#### CURRENT ISSUES
 """
-we only trade one good in each round
-initialise portfolio with 100k
-    quantity = 0
-    value = 100,000
-    
-
-for each timestamp,
-
-    for each product at that time stamp,
-        set the listing price, quantity, symbol
-
-    run the trader class
-    for each order:
-        check that the price and direction exists:
-            check that order is not greater than quantity avaliable
-        
-                update portfolio with outcome
+Orders ordering too much, specifically when trying to buy
 """
 class Portfolio:
     def __init__(self) -> None:
@@ -47,30 +33,56 @@ for tick in range(0, ticks):
 
     algo = Trader()
     orders = algo.run(market_listings)
-    # order matching
-    for order in orders: ### market listing still exists so woudl be vulnerable to someon just sending hundreds of orders
-        if order.quantity < 0: # sell orders
-            #match order with a buy order
-            quantity = order.quantity ###################### listing is not an object, figure out how to get the listing's price and quantity
-            for listing in buy_orders:
-                print("---")
-                print(pos_limit - abs(portfolio.quantity))
-                print(order.quantity)
-                print(buy_orders[listing].iloc[0])
-                print("---")
-                if listing > order.price:
-                    fulfilled_amount = min(int(pos_limit - abs(portfolio.quantity)), -order.quantity, buy_orders[listing].iloc[0])
-                    print(fulfilled_amount)
-                    portfolio.quantity -= fulfilled_amount
-                    portfolio.cash += fulfilled_amount * order.price
-                    quantity += fulfilled_amount
-                if quantity == 0 or listing < order.price:
-                    print("OUT")
-                    break
-                print(f"quantity left = {quantity}")
-        elif order.quantity > 0: # buy orders
-            pass
-    # portfolio tracking
+    if orders != []:
+        buy_prices = list(buy_orders.keys())
+        buy_quantities = list(buy_orders.values())
+        buy_quantities = [value.iloc[0] for value in buy_quantities]
+
+        sell_prices = list(sell_orders.keys())
+        sell_quantities = list(sell_orders.values())
+        sell_quantities = [value.iloc[0] for value in sell_quantities]
+
+        # order matching
+        for order in orders: 
+            print("!!")
+            print(order.quantity)
+            print(order.price)
+            print("!!")
+            if order.quantity < 0: # sell orders
+                #match order with a buy order
+                quantity = order.quantity
+                for i in range(len(buy_orders)):
+                    if buy_quantities[i] != 0:
+                        if buy_prices[i] >= order.price:
+                            print(f"Quantity at {buy_prices[i]} = {buy_quantities[i]}")
+                            fulfilled_amount = min(int(pos_limit - abs(portfolio.quantity)), -quantity, buy_quantities[i]) #quantity before order limit, order quantity remaining, quantity avaliable, 
+                            print(fulfilled_amount)
+                            portfolio.quantity -= fulfilled_amount
+                            buy_quantities[i] -= fulfilled_amount
+                            portfolio.cash += fulfilled_amount * order.price
+                            quantity += fulfilled_amount
+                    if quantity == 0 or buy_prices[i] < order.price:
+                        print("OUT")
+                        break
+                    print(f"quantity left = {quantity}")
+
+            elif order.quantity > 0: # buy orders
+                quantity = order.quantity
+                for i in range(0,len(buy_orders)):
+                    if sell_quantities[i] != 0:
+                        print(f"sell price = {sell_prices[i]}, our order = {order.price}")
+                        if sell_prices[i] <= order.price:
+                            print(f"Quantity at {sell_prices[i]} = {sell_quantities[i]}")
+                            fulfilled_amount = min(int(pos_limit - abs(portfolio.quantity)), order.quantity, sell_quantities[i])
+                            print(f"ffd amt:{fulfilled_amount}")
+                            portfolio.quantity += fulfilled_amount
+                            sell_quantities[i] += fulfilled_amount
+                            portfolio.cash -= fulfilled_amount * order.price
+                            quantity -= fulfilled_amount
+                    if quantity == 0 or sell_prices[i] > order.price:
+                        print("OUT")
+                        break
+                    print(f"quantity left = {quantity}")
     break
 
 end = datetime.now()
