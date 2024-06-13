@@ -38,7 +38,7 @@ for tick in range(0, 5000):
     algo = Trader()
     orders = algo.run(market_listings)
     if orders != []:
-        buy_prices = list(buy_orders.keys())
+        buy_prices = list(buy_orders.keys()) # market buy orders aka the price we can sell at
         buy_quantities = list(buy_orders.values())
         buy_quantities = [value.iloc[0] for value in buy_quantities]
 
@@ -54,12 +54,13 @@ for tick in range(0, 5000):
                 for i in range(len(buy_orders)):
                     if buy_quantities[i] != 0:
                         if buy_prices[i] >= order.price:
-                            fulfilled_amount = min(int(pos_limit - abs(portfolio.quantity)), -quantity, buy_quantities[i]) #quantity before order limit, order quantity remaining, quantity avaliable, 
+                            fulfilled_amount = min(int(pos_limit + portfolio.quantity), -quantity, buy_quantities[i]) #quantity before order limit, order quantity remaining, quantity avaliable, 
                             portfolio.quantity -= fulfilled_amount
                             buy_quantities[i] -= fulfilled_amount
                             portfolio.cash += fulfilled_amount * order.price
                             portfolio.value -= fulfilled_amount * order.price
                             quantity += fulfilled_amount
+                            print(f"selling {fulfilled_amount} at {buy_prices[i]}")
                     if quantity == 0 or buy_prices[i] < order.price:
                         #print("OUT")
                         break
@@ -67,18 +68,19 @@ for tick in range(0, 5000):
 
             elif order.quantity > 0: # buy orders
                 quantity = order.quantity
-                for i in range(0,len(buy_orders)):
+                for i in range(0,len(sell_orders)):
                     if sell_quantities[i] != 0:
                         #print(f"sell price = {sell_prices[i]}, our order = {order.price}")
                         if sell_prices[i] <= order.price:
                             #print(f"Quantity at {sell_prices[i]} = {sell_quantities[i]}")
-                            fulfilled_amount = min(int(pos_limit - abs(portfolio.quantity)), quantity, sell_quantities[i])
+                            fulfilled_amount = min(int(pos_limit - portfolio.quantity), quantity, sell_quantities[i])
                             #print(f"ffd amt:{fulfilled_amount} out of qty: {quantity}")
                             portfolio.quantity += fulfilled_amount
                             sell_quantities[i] += fulfilled_amount
                             portfolio.cash -= fulfilled_amount * order.price
                             portfolio.value += fulfilled_amount * order.price
                             quantity -= fulfilled_amount
+                            print(f"buying {fulfilled_amount} at {sell_prices[i]}")
                     if quantity == 0 or sell_prices[i] > order.price:
                         #print("OUT")
                         break
