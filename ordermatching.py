@@ -28,7 +28,7 @@ def match_buy_order(order, sell_orders, portfolio, product, product_limit):
 def match_sell_order(order, buy_orders, portfolio, product, product_limit):
     limit_price = order.price
     outstanding_quantity = order.quantity
-    for pricepoint in sorted(buy_orders.keys()):
+    for pricepoint in sorted(buy_orders.keys(), reverse=True):
         if buy_orders[pricepoint] > 0:
             if pricepoint <= order.price:
                 fulfilled_amount = min(int(product_limit + portfolio.quantity.get(product, 0)), -outstanding_quantity, buy_orders[pricepoint]) #quantity before order limit, order quantity remaining, quantity avaliable, 
