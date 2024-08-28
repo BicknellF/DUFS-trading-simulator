@@ -2,13 +2,15 @@ import pandas as pd
 
 def read_file(file_path):
     df = pd.read_csv(file_path)
-    return df
+    products = df["product"].unique()
+    ticks = df["timestamp"].nunique()
+    return products, ticks, df
 
 def extract_orders(df, tick, product):
     row = df[df["timestamp"] == tick*100]
     row = row[row["product"] == product]
-    bid_orders = {} #price:quantity pairs
-    ask_orders = {} #price:quantity pairs
+    bid_orders = {} #price:quantity 
+    ask_orders = {} #price:quantity 
     for i in range(1, 4):
         price = row[f"bid_price_{i}"].iloc[0]
         bid_orders[price] = row[f"bid_volume_{i}"]

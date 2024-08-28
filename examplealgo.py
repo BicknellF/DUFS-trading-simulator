@@ -1,9 +1,9 @@
 from datamodel import *
 
 class Trader:
-    def run(self, market_listings, products):
+    def run(self, orderbook, products):
         orders = []
-        product = Listing(market_listings, "Amethysts")
+        product = Listing(orderbook, "Amethysts")
         
         bids= list(product.buy_orders)
         bid_quantities = list(product.buy_orders.values())
