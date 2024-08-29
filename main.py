@@ -1,82 +1,52 @@
-from datamodel import *
-from dataimport import *
-from Runscript import *
+from datamodel import Listing, Order
+from dataimport import read_file, extract_orders
+from ordermatching import match_order
 from datetime import datetime
+import pandas as pd
 import matplotlib.pyplot as plt
 
 class Portfolio:
     def __init__(self) -> None:
         self.cash = 0
-        self.quantity = 0
+        self.quantity = {} 
+        self.pnl = {}
 
+filepath = "Round Data\Options\Option_round_test.csv"
+
+pos_limit = {}
+products, ticks, df = read_file(filepath)
+
+from examplealgo import Trader # Loads the Trader class from the algorithm
+
+# Initialise holdings of each product at 0
 portfolio = Portfolio()
+for product in products: 
+    portfolio.quantity[product] = 0
+    pos_limit[product] = 20
 
-filepath = "prices_round_1_day_-1.csv"
-product = "AMETHYSTS"
-pos_limit = 20
-df = read_file(filepath, product)
-ticks = len(df)
+quantity_data = pd.DataFrame(index=range(1, ticks), columns=[f"{product}_quantity" for product in products])
 
-from examplealgo import Trader
+algo = Trader()
 
-vis = []
 start = datetime.now()
-for tick in range(0, ticks):
-    #print(tick)
-    market_listings = extract_orders(df, tick)
-    sell_orders = market_listings[1]
-    buy_orders = market_listings[0]
+for tick in range(1, ticks):
+    print(tick)
+    for product in products:
+        orderbook = extract_orders(df, tick, product) 
+        orders = algo.run(orderbook, products) # Run the submitted algorithm on this tick
+        if orders != []:
+            for order in orders: 
+                #if order is valid:
+                """
+                CHECK IF THE ORDER IS A VALID ORDER
+                """
+                match_order(order, orderbook, portfolio, product, pos_limit)
+        quantity_data.loc[tick, f"{product}_quantity"] = portfolio.quantity[product]
 
-    algo = Trader()
-    orders = algo.run(market_listings)
-    if orders != []:
-        bid_prices = list(buy_orders.keys()) # market buy orders aka the price we can sell at
-        bid_quantities = list(buy_orders.values())
-        bid_quantities = [value.iloc[0] for value in bid_quantities]
-
-        ask_prices = list(sell_orders.keys())
-        ask_quantities = list(sell_orders.values())
-        ask_quantities = [value.iloc[0] for value in ask_quantities]
-
-        # order matching
-        for order in orders: 
-            if order.quantity < 0: # Selling
-                #match order with a buy order
-                quantity = order.quantity
-                for i in range(len(buy_orders)):
-                    if bid_quantities[i] > 0:
-                        if bid_prices[i] >= order.price:
-                            fulfilled_amount = min(int(pos_limit + portfolio.quantity), -quantity, bid_quantities[i]) #quantity before order limit, order quantity remaining, quantity avaliable, 
-                            portfolio.quantity -= fulfilled_amount
-                            bid_quantities[i] -= fulfilled_amount
-                            portfolio.cash += fulfilled_amount * bid_prices[i]
-                            quantity += fulfilled_amount
-                            #print(f"selling {fulfilled_amount} at {buy_prices[i]}")
-                    if quantity == 0 or bid_prices[i] < order.price:
-                        break
-                    #print(f"quantity left = {quantity}")
-
-            elif order.quantity > 0: # Buying
-                quantity = order.quantity
-                for i in range(0,len(sell_orders)):
-                    if ask_quantities[i] > 0:
-                        #print(f"sell price = {sell_prices[i]}, our order = {order.price}")
-                        if ask_prices[i] <= order.price:
-                            #print(f"Quantity at {sell_prices[i]} = {sell_quantities[i]}")
-                            fulfilled_amount = min(int(pos_limit - portfolio.quantity), quantity, ask_quantities[i])
-                            #print(f"ffd amt:{fulfilled_amount} out of qty: {quantity}")
-                            portfolio.quantity += fulfilled_amount
-                            ask_quantities[i] -= fulfilled_amount
-                            portfolio.cash -= fulfilled_amount * ask_prices[i]
-                            quantity -= fulfilled_amount
-                            #print(f"buying {fulfilled_amount} at {sell_prices[i]}")
-                    if quantity == 0 or ask_prices[i] > order.price:
-                        break
-    midprice = (bid_prices[0] + ask_prices[0]) /2
-    pnl = portfolio.cash + (midprice* portfolio.quantity)
-
-    vis.append(pnl)
-    #vis.append(portfolio.quantity)
+    
+    """
+    PNL CALCULATIONS
+    """
 
 end = datetime.now()
 
@@ -85,7 +55,8 @@ end = datetime.now()
 # 9.35
 # 3 seconds with no printing
 print((end-start))
-
-print(portfolio.quantity)
-plt.plot(vis)
+print(quantity_data)
+quantity_data["PUT_quantity"].plot()
+quantity_data["CALL_quantity"].plot()
+quantity_data["ASSET_quantity"].plot()
 plt.show()

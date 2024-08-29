@@ -1,9 +1,9 @@
 #position limit needs adding
 
 class Listing: # potentially separate buyprice and sell price
-    def __init__(self, market_listings, product) -> None:
-        self.buy_orders = market_listings[0] #dict of {price: quantity} [0] is lowest price
-        self.sell_orders = market_listings[1] #dict of {price: quantity} [0] is highest price
+    def __init__(self, orderbook, product) -> None:
+        self.buy_orders = orderbook["BUY"] #dict of {price: quantity} top is lowest price
+        self.sell_orders = orderbook["SELL"] #dict of {price: quantity} top is highest price
         self.product = product
         
 class Order:
