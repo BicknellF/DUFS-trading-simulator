@@ -24,13 +24,13 @@ for product in products:
     portfolio.quantity[product] = 0
     pos_limit[product] = 20
 
-quantity_data = pd.DataFrame(index=range(1, ticks), columns=[f"{product}_quantity" for product in products])
+quantity_data = pd.DataFrame(index=range(1, ticks), columns=[f"{product}_quantity" for product in products] + ["PnL", "Cash"])
 
 algo = Trader()
 
 start = datetime.now()
-for tick in range(1, ticks):
-    #print(tick)
+for tick in range(1, 100):
+    print(tick)
     # Build orderbook
     orderbook = {}
 
@@ -44,15 +44,18 @@ for tick in range(1, ticks):
             """
             CHECK IF THE ORDER IS A VALID ORDER
             """
+
             match_order(order, orderbook, portfolio, pos_limit)
 
+        portfolio.pnl = portfolio.cash
+        for product in products:
+            portfolio.pnl += portfolio.quantity[product] * next(iter(orderbook[product]["SELL"]))
+    
+    quantity_data.loc[tick, "PnL"] = portfolio.pnl
+    quantity_data.loc[tick, "Cash"] = portfolio.cash
     for product in products:
         quantity_data.loc[tick, f"{product}_quantity"] = portfolio.quantity[product]
 
-    
-    """
-    PNL CALCULATIONS
-    """
 
 end = datetime.now()
 
@@ -62,7 +65,9 @@ end = datetime.now()
 # 3 seconds with no printing
 print((end-start)/ticks)
 print(quantity_data)
-quantity_data["PUT_quantity"].plot()
-quantity_data["CALL_quantity"].plot()
-quantity_data["ASSET_quantity"].plot()
+quantity_data["PnL"].plot(legend=True)
+quantity_data["Cash"].plot(legend=True)
+# quantity_data["PUT_quantity"].plot(legend=True)
+# quantity_data["CALL_quantity"].plot(legend=True)
+# quantity_data["ASSET_quantity"].plot(legend=True)
 plt.show()

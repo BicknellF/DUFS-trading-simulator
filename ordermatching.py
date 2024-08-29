@@ -16,6 +16,7 @@ def match_buy_order(order, sell_orders, portfolio, pos_limit):
             if pricepoint >= order.price:
                 fulfilled_amount = min(int(product_limit - portfolio.quantity.get(product, 0)), outstanding_quantity, sell_orders[pricepoint]) #quantity before order limit, order quantity remaining, quantity avaliable, 
                 
+                # Update portfolio
                 portfolio.quantity[product] += fulfilled_amount
                 sell_orders[pricepoint] -= fulfilled_amount
                 portfolio.cash -= fulfilled_amount * sell_orders[pricepoint]
@@ -37,10 +38,11 @@ def match_sell_order(order, buy_orders, portfolio, pos_limit):
             if pricepoint <= order.price:
                 fulfilled_amount = min(int(product_limit + portfolio.quantity.get(product, 0)), -outstanding_quantity, buy_orders[pricepoint]) #quantity before order limit, order quantity remaining, quantity avaliable, 
                 
+                # Update portfolio
                 portfolio.quantity[product] -= fulfilled_amount
                 buy_orders[pricepoint] -= fulfilled_amount
                 portfolio.cash += fulfilled_amount * buy_orders[pricepoint]
-                
+
                 outstanding_quantity += fulfilled_amount
                 #print(f"selling {fulfilled_amount} at {buy_prices[i]}")
         
