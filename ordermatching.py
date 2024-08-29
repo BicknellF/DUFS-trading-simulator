@@ -1,12 +1,14 @@
-def match_order(order: object, orderbook: dict, portfolio: object, product: str, pos_limit: dict):
+def match_order(order: object, orderbook: dict, portfolio: object, pos_limit: dict):
     if order.quantity > 0:
-        match_buy_order(order, orderbook["SELL"], portfolio, product, pos_limit[product])
+        match_buy_order(order, orderbook[order.product]["SELL"], portfolio, pos_limit)
     elif order.quantity < 0:
-        match_sell_order(order, orderbook["BUY"], portfolio, product, pos_limit[product])
+        match_sell_order(order, orderbook[order.product]["BUY"], portfolio, pos_limit)
     else:
         pass
 
-def match_buy_order(order, sell_orders, portfolio, product, product_limit):
+def match_buy_order(order, sell_orders, portfolio, pos_limit):
+    product = order.product
+    product_limit = pos_limit[product]
     limit_price = order.price
     outstanding_quantity = order.quantity
     for pricepoint in sorted(sell_orders.keys()):
@@ -25,7 +27,9 @@ def match_buy_order(order, sell_orders, portfolio, product, product_limit):
                 break
     
 
-def match_sell_order(order, buy_orders, portfolio, product, product_limit):
+def match_sell_order(order, buy_orders, portfolio, pos_limit):
+    product = order.product
+    product_limit = pos_limit[product]
     limit_price = order.price
     outstanding_quantity = order.quantity
     for pricepoint in sorted(buy_orders.keys(), reverse=True):

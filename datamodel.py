@@ -7,8 +7,8 @@ class Listing: # potentially separate buyprice and sell price
         self.product = product
         
 class Order:
-    def __init__(self, symbol, price, quantity) -> None:
-        self.symbol = symbol
+    def __init__(self, product, price, quantity) -> None:
+        self.product = product
         self.quantity = quantity
         self.price = price
 

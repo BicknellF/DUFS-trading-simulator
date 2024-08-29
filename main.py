@@ -9,7 +9,7 @@ class Portfolio:
     def __init__(self) -> None:
         self.cash = 0
         self.quantity = {} 
-        self.pnl = {}
+        self.pnl = 0
 
 filepath = "Round Data\Options\Option_round_test.csv"
 
@@ -30,17 +30,23 @@ algo = Trader()
 
 start = datetime.now()
 for tick in range(1, ticks):
-    print(tick)
+    #print(tick)
+    # Build orderbook
+    orderbook = {}
+
     for product in products:
-        orderbook = extract_orders(df, tick, product) 
-        orders = algo.run(orderbook, products) # Run the submitted algorithm on this tick
-        if orders != []:
-            for order in orders: 
-                #if order is valid:
-                """
-                CHECK IF THE ORDER IS A VALID ORDER
-                """
-                match_order(order, orderbook, portfolio, product, pos_limit)
+        orderbook[product] = extract_orders(df, tick, product)
+        
+    orders = algo.run(orderbook, products) # Run the submitted algorithm on this tick
+    if orders != []:
+        for order in orders: 
+            #if order is valid:
+            """
+            CHECK IF THE ORDER IS A VALID ORDER
+            """
+            match_order(order, orderbook, portfolio, pos_limit)
+
+    for product in products:
         quantity_data.loc[tick, f"{product}_quantity"] = portfolio.quantity[product]
 
     
@@ -54,7 +60,7 @@ end = datetime.now()
 # roughly 10 seconds per day
 # 9.35
 # 3 seconds with no printing
-print((end-start))
+print((end-start)/ticks)
 print(quantity_data)
 quantity_data["PUT_quantity"].plot()
 quantity_data["CALL_quantity"].plot()
