@@ -7,9 +7,8 @@ class Listing: # potentially separate buyprice and sell price
         self.product = product
         
 class Order:
-    def __init__(self, product: str, order_type: str, quantity: int, price: float):
+    def __init__(self, product: str, quantity: int, price: float):
         self.product = product
-        self.order_type = order_type
         self.quantity = quantity
         self.price = price
 
@@ -28,12 +27,8 @@ class Order:
         if not isinstance(self.quantity, int) or self.quantity == 0:
             return False
         
-        # Check if the order has a valid price (positive float)
-        if not isinstance(self.price, float) or self.price <= 0:
-            return False
-        
-        # Check if the order type is valid (BUY or SELL)
-        if self.order_type not in ["BUY", "SELL"]:
+        # Check if the order has a valid price (positive integer)
+        if not isinstance(self.price, int) or self.price <= 0:
             return False
         
         # All checks passed, the order is valid
