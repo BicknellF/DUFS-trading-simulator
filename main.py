@@ -29,7 +29,7 @@ def process_tick(tick: int, orderbook: Dict[str, Dict], algo: Trader, portfolio:
 
     if orders:
         for order in orders:
-            if is_valid_order(order):  # Implement this function
+            if order.is_valid():
                 match_order(order, orderbook, portfolio, pos_limit)
 
     portfolio.pnl = portfolio.cash
