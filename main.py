@@ -33,7 +33,7 @@ def import_trader(file_path: str) -> type:
         logging.error(f"Error importing Trader class from {file_path}: {str(e)}")
         sys.exit(1)
 
-def initialize_portfolio(products: List[str]) -> Portfolio:
+def initialise_portfolio(products: List[str]) -> Portfolio:
     portfolio = Portfolio()
     for product in products:
         portfolio.quantity[product] = 0
@@ -62,21 +62,26 @@ def add_bot_orders(orderbook: Dict[str, Dict], bot_orders: Dict[str, Dict]) -> N
 def process_tick(tick: int, orderbook: Dict[str, Dict], bot_orders: Dict[str, Dict], algo, portfolio: Portfolio, products: List[str], pos_limit: Dict[str, int]) -> None:
     try:
         # Get orders from the trader 
-        algo_orders = algo.run(orderbook, products)
-
-        # Add bot orders to the orderbook
-        add_bot_orders(orderbook, bot_orders)
+        try:
+            algo_orders = algo.run(orderbook, products)
+        except Exception as e:
+            logging.error(f"Error in trading algorithm: {str(e)}")
 
         # Process algo orders
         if algo_orders:
+            # Add bot orders to the orderbook
+            add_bot_orders(orderbook, bot_orders)
+
             for order in algo_orders:
-                # if order.is_valid():
-                #     print(order)
                 match_order(order, orderbook, portfolio, pos_limit)
 
         portfolio.pnl = portfolio.cash
         for product in products:
-            portfolio.pnl += portfolio.quantity[product] * next(iter(orderbook[product]["SELL"]))
+            best_bid = next(iter(orderbook[product]["BUY"]))
+            best_ask = next(iter(orderbook[product]["SELL"]))
+            midprice = (best_bid + best_ask) / 2
+            portfolio.pnl += portfolio.quantity[product] * midprice
+            
     except Exception as e:
         logging.error(f"Error processing tick {tick}: {str(e)}")
 
@@ -86,45 +91,66 @@ def update_quantity_data(quantity_data: pd.DataFrame, tick: int, portfolio: Port
     for product in products:
         quantity_data.loc[tick, f"{product}_quantity"] = portfolio.quantity[product]
 
-def main(file_path: str, bot_file_path: str, trader_file: str) -> None:
+def main(round_data_path: str, trading_algo: str) -> None:
     try:
-        products, ticks, df = read_file(file_path)
-        bot_df = pd.read_csv(bot_file_path)
-        portfolio = initialize_portfolio(products)
+        products, ticks, df = read_file(round_data_path)
+        bot_df = pd.read_csv(round_data_path[:-4] + "_bots.csv")
+        portfolio = initialise_portfolio(products)
         pos_limit = {product: POSITION_LIMIT for product in products}
 
         # Import the Trader class
-        Trader = import_trader(trader_file)
+        Trader = import_trader(trading_algo)
         algo = Trader()
 
-        # Initialize the portfolio's initial value
+        # initialise the portfolio's initial value
         portfolio.initial_value = portfolio.cash
         for product in products:
-            try:
-                portfolio.initial_value += portfolio.quantity[product] * next(iter(extract_orders(df, 1, product)["SELL"]))
-            except StopIteration:
-                logging.warning(f"No sell orders for {product} at tick 1")
+            portfolio.initial_value += portfolio.quantity[product] * next(iter(extract_orders(df, 1, product)["SELL"]))
 
         quantity_data = pd.DataFrame(index=range(1, ticks), columns=[f"{product}_quantity" for product in products] + ["PnL", "Cash"])
 
         start = datetime.now()
         for tick in range(1, MAX_TICKS):
-            print(tick)
+            if tick % 100 == 0:
+                print(tick)
+
+            orderbook = {product: extract_orders(df, tick, product) for product in products}
+            bot_orders = {product: extract_bot_orders(bot_df, tick, product) for product in products}
             try:
-                orderbook = {product: extract_orders(df, tick, product) for product in products}
-                bot_orders = {product: extract_bot_orders(bot_df, tick, product) for product in products}
                 process_tick(tick, orderbook, bot_orders, algo, portfolio, products, pos_limit)
                 update_quantity_data(quantity_data, tick, portfolio, products)
-            except Exception as e:
-                logging.error(f"Error in tick {tick}: {str(e)}")
+            except:
+                break
 
         end = datetime.now()
-        logging.info(f"Time per tick: {(end-start)/MAX_TICKS}")
-        logging.info(quantity_data)
+        print(f"Time per tick: {(end-start)/MAX_TICKS}")
+        print(quantity_data)
+
+        # Portfolio summary
+        print("\n=== Final Portfolio State ===")
+        print(f"Cash: {portfolio.cash:.2f}")
+        print(f"PnL: {portfolio.pnl:.2f}")
+        for product in products:
+            print(f"{product} quantity: {portfolio.quantity[product]}")
 
         # Plotting
-        quantity_data["PnL"].plot(legend=True)
-        quantity_data["Cash"].plot(legend=True)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12))
+        fig.suptitle("Trading Simulation Results")
+
+        # Plot PnL
+        quantity_data["PnL"].plot(ax=ax1, title="Portfolio PnL")
+        ax1.set_xlabel("Tick")
+        ax1.set_ylabel("PnL")
+
+        # Plot product quantities over time
+        for product in products:
+            quantity_data[f"{product}_quantity"].plot(ax=ax2, label=product)
+        ax2.set_title("Product Quantities")
+        ax2.set_xlabel("Tick")
+        ax2.set_ylabel("Quantity")
+        ax2.legend()
+
+        plt.tight_layout()
         plt.show()
 
     except Exception as e:
@@ -132,9 +158,8 @@ def main(file_path: str, bot_file_path: str, trader_file: str) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the trading simulation.")
-    parser.add_argument("--round", default="Round Data/Options/Option_round_test.csv", help="Path to the main data file")
-    parser.add_argument("--bot-file", default="Round Data/Options/Option_round_test_bots.csv", help="Path to the bot data file")
-    parser.add_argument("--trader", default="examplealgo.py", help="Path to the file containing the Trader class")
+    parser.add_argument("--round", default="Round Data/Options/Option_round_test.csv", help="Main data file path")
+    parser.add_argument("--algo", default="examplealgo.py", help="Trading alngorithm path")
     args = parser.parse_args()
 
-    main(args.file, args.bot_file, args.trader, args.max_ticks)
+    main(args.round, args.algo)

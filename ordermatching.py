@@ -1,4 +1,7 @@
-def match_order(order: object, orderbook: dict, portfolio: object, pos_limit: dict):
+from datamodel import Order, Portfolio
+from typing import Dict, Any
+
+def match_order(order: Order, orderbook: Dict[str, Dict[str, Dict[int, int]]], portfolio: Any, pos_limit: Dict[str, int]):
     if order.quantity > 0:
         match_buy_order(order, orderbook[order.product]["SELL"], portfolio, pos_limit)
     elif order.quantity < 0:
@@ -6,7 +9,7 @@ def match_order(order: object, orderbook: dict, portfolio: object, pos_limit: di
     else:
         pass
 
-def match_buy_order(order, sell_orders, portfolio, pos_limit):
+def match_buy_order(order: Order, sell_orders: Dict[int, int], portfolio: Any, pos_limit: Dict[str, int]):
     product = order.product
     product_limit = pos_limit[product]
     limit_price = order.price
@@ -28,7 +31,7 @@ def match_buy_order(order, sell_orders, portfolio, pos_limit):
                 break
     
 
-def match_sell_order(order, buy_orders, portfolio, pos_limit):
+def match_sell_order(order: Order, buy_orders: Dict[int, int], portfolio: Any, pos_limit: Dict[str, int]):
     product = order.product
     product_limit = pos_limit[product]
     limit_price = order.price

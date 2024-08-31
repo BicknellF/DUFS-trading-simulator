@@ -2,25 +2,17 @@ from datamodel import *
 
 class Trader:
     last_price = 0
-    def run(self, orderbook, products):
+    def run(self, orderbook, products, state):
         orders = []
         for product in products:
             listings = Listing(orderbook[product], product)
             
-            bids = list(listings.buy_orders)
+            highest_bid = list(listings.buy_orders.keys())[0]
             bid_quantities = list(listings.buy_orders.values())
 
-            asks = list(listings.sell_orders.keys())
+            lowest_ask = list(listings.sell_orders.keys())[0]
             ask_quantities = list(listings.sell_orders.values())
-
-            price = self.last_price
-            if bids[0] > price:
-                highest_bid = asks[0]
-                orders.append(Order(product, asks[0], -5))
-                self.last_price = bids[0]
             
-            elif asks[0] < price:
-                lowest_ask = bids[0]
-                orders.append(Order(product, bids[0], 5))
-                self.last_price = bids[0]
+            orders.append(Order(product, lowest_ask - 1, 5))
+            orders.append(Order(product, highest_bid + 1, -5))
         return orders

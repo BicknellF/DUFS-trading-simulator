@@ -1,12 +1,13 @@
 import pandas as pd
+from typing import Tuple, Dict, List
 
-def read_file(file_path):
+def read_file(file_path: str) -> Tuple[List[str], int, pd.DataFrame]:
     df = pd.read_csv(file_path)
-    products = df["product"].unique()
+    products = df["product"].unique().tolist()
     ticks = df["timestamp"].nunique()
     return products, ticks, df
 
-def extract_orders(df, tick, product):
+def extract_orders(df: pd.DataFrame, tick: int, product: str) -> Dict[str, Dict[float, int]]:
     row = df[df["timestamp"] == tick*100]
     row = row[row["product"] == product]
     bid_orders = {} #price:quantity 
@@ -21,7 +22,7 @@ def extract_orders(df, tick, product):
     return {"BUY": bid_orders, 
             "SELL": ask_orders}
 
-def extract_bot_orders(df, tick, product):
+def extract_bot_orders(df: pd.DataFrame, tick: int, product: str) -> Dict[str, Dict[float, int]]:
     row = df[df["timestamp"] == tick*100]
     row = row[row["product"] == product]
     bid_orders = {}  # price:quantity 
