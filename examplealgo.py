@@ -16,3 +16,9 @@ class Trader:
             orders.append(Order(product, lowest_ask - 1, 5))
             orders.append(Order(product, highest_bid + 1, -5))
         return orders
+
+    quantity = 0
+    price = 0
+    product = 0
+
+    Order(product, price, quantity)

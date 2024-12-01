@@ -6,6 +6,7 @@ from typing import Dict, List
 import importlib.util
 import pandas as pd
 import matplotlib.pyplot as plt
+import copy
 
 from datamodel import Portfolio, State
 from dataimport import read_file, extract_orders, extract_bot_orders
@@ -67,7 +68,8 @@ def add_bot_orders(orderbook: Dict[str, Dict], bot_orders: Dict[str, Dict]) -> N
 def process_tick(state: State, bot_orders: Dict[str, Dict], algo, portfolio) -> None:
     # Get orders from the trader
     try:
-        algo_orders = algo.run(state)
+        publicstate = copy.deepcopy(state)
+        algo_orders = algo.run(publicstate)
     except Exception as e:
         logging.error(f"Error in trading algorithm: {str(e)}")
 
