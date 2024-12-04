@@ -67,11 +67,9 @@ def add_bot_orders(orderbook: Dict[str, Dict], bot_orders: Dict[str, Dict]) -> N
 
 def process_tick(state: State, bot_orders: Dict[str, Dict], algo, portfolio) -> None:
     # Get orders from the trader
-    try:
-        publicstate = copy.deepcopy(state)
-        algo_orders = algo.run(publicstate)
-    except Exception as e:
-        logging.error(f"Error in trading algorithm: {str(e)}")
+
+    publicstate = copy.deepcopy(state)
+    algo_orders = algo.run(publicstate)
 
     # Process algo orders
     if algo_orders:
@@ -85,7 +83,7 @@ def process_tick(state: State, bot_orders: Dict[str, Dict], algo, portfolio) -> 
         best_bid = next(iter(state.orderbook[product]["BUY"]))
         best_ask = next(iter(state.orderbook[product]["SELL"]))
         midprice = (best_bid + best_ask) / 2
-        portfolio.pnl += portfolio.quantity[product] * midprice
+        portfolio.pnl += (portfolio.quantity[product] * midprice)
 
 def update_quantity_data(quantity_data: pd.DataFrame, tick: int, portfolio: Portfolio, products: List[str]) -> None:
     quantity_data.loc[tick, "PnL"] = portfolio.pnl
