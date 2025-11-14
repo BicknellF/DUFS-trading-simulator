@@ -68,7 +68,9 @@ def add_bot_orders(orderbook: Dict[str, Dict], bot_orders: Dict[str, Dict]) -> N
 def process_tick(state: State, bot_orders: Dict[str, Dict], algo, portfolio) -> None:
     # Get orders from the trader
 
-    publicstate = copy.deepcopy(state)
+    ob_copy = {product: {side: orders.copy() for side,orders in ob.items()} for product,ob in state.orderbook.items()}
+    publicstate = State(ob_copy,state.positions.copy(),state.products,state.pos_limit)
+
     algo_orders = algo.run(publicstate)
 
     # Process algo orders
