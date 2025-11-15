@@ -17,3 +17,8 @@ state.orderbook[product]["SELL"] # dict of sell orders in the form {price: quant
 
 ### Sending orders:
 On each timestep, `Trader.run()` returns a list of orders. Each order in this list is an object of the class `Order`. The `Order` class requires a product, price, and quantity in the form `Order(product, price, quantity)`. Orders are "bids" (buying) when the quantity is positive, or "asks" (selling) when the quantity is negative. e.g to place an order to buy 1 unit of a call option at price 10, you should create an Order using `Order("Call", 10, 1)`.
+
+
+### Bots:
+On each timestamp, your algorithm will see the current orderbook and place orders. If these orders don't immediately match with a resting order, they will be added to the orderbook. Before the next timestamp, some bot trades may take place that can match with orders left on the orderbook.
+
