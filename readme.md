@@ -2,13 +2,10 @@
 
 This project aims to aid the education of DUFS Quant Fund members in financial markets by providing users an OOP environment to create strategies and test them on artificial market data.
 
-### Products:
-This simulation allows users to trade three products; `Call`, `Put`, and `Underlying`. 
-- `Underlying`: This represents a stock or commodity.
-- `Call`: This represents a European call option on `Underlying` with a strike price of `1000` in 365 days.
-- `Put`: This represents a European put option on `Underlying` with a strike price of `1000` in 365 days.
+Please pip install all the packages if your IDE tells you to.
 
-This simulation's timescale can be considered negligible relative to expiry with all timesteps within the same day.
+To backtest your strategy, run main.py after writing your algo in examplealgo.py
+
 
 ### Accessing Market Data:
 Each product has an order book, this will change every timestep. To access the order book for `Underlying`, the code would be as follows
