@@ -11,6 +11,7 @@ import copy
 from datamodel import Portfolio, State
 from dataimport import read_file, extract_orders, extract_bot_orders
 from ordermatching import match_order
+from analytics_vis import Visualiser
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -93,10 +94,44 @@ def update_quantity_data(quantity_data: pd.DataFrame, tick: int, portfolio: Port
     for product in products:
         quantity_data.loc[tick, f"{product}_quantity"] = portfolio.quantity[product]
 
+
+def prepare_analytics_data(quantity_data: pd.DataFrame, products: List[str],
+                           market_data: pd.DataFrame) -> pd.DataFrame:
+
+    analytics_df = pd.DataFrame(index=quantity_data.index)
+
+    ticks = quantity_data.index
+
+    for product in products:
+        mid_prices = []
+        bid_prices = []
+        offer_prices = []
+        for tick in ticks:
+            try:
+                row = market_data[market_data["timestamp"] == tick * 100]
+                row = row[row["product"] == product]
+                best_bid = row['bid_price_1'].iloc[0]
+                best_ask = row['ask_price_1'].iloc[0]
+                mid_price = (best_bid + best_ask) / 2
+                bid_prices.append(best_bid)
+                offer_prices.append(best_ask)
+                mid_prices.append(mid_price)
+            except:
+                # If data missing, use NaN
+                mid_prices.append(None)
+                bid_prices.append(None)
+                offer_prices.append(None)
+        analytics_df[product] = mid_prices
+        analytics_df[f"{product}_bid"] = bid_prices
+        analytics_df[f"{product}_offer"] = offer_prices
+    analytics_df["pnl"] = quantity_data["PnL"]
+
+    return analytics_df
+
 def main(round_data_path: str, trading_algo: str) -> None:
     products, ticks, df = read_file(round_data_path)
     bot_df = pd.read_csv(round_data_path[:-4] + "_bots.csv")
-
+    market_data = df.copy()
     portfolio = initialise_portfolio(products)
     pos_limit = {product: POSITION_LIMIT for product in products}
 
@@ -108,6 +143,14 @@ def main(round_data_path: str, trading_algo: str) -> None:
     quantity_data = pd.DataFrame(index=range(1, ticks), columns=[f"{product}_quantity" for product in products] + ["PnL", "Cash"])
     start = datetime.now()
 
+    metrics = {
+        'tick':[],
+        'PnL': [],
+        'Cash':[]
+    }
+    for product in products:
+        metrics[f'{product}_quantity'] = []
+
     for tick in range(1, MAX_TICKS):
         if tick % 100 == 0:
             print(tick)
@@ -117,48 +160,34 @@ def main(round_data_path: str, trading_algo: str) -> None:
         state = State(orderbook, portfolio.quantity, products, pos_limit)
         try:
             process_tick(state, bot_orders, algo, portfolio)
-            update_quantity_data(quantity_data, tick, portfolio, products)
+            metrics['tick'].append(tick)
+            metrics['PnL'].append(portfolio.pnl)
+            metrics['Cash'].append(portfolio.cash)
+            for product in products:
+                metrics[f'{product}_quantity'].append(portfolio.quantity[product])
 
         except:
             break
 
     end = datetime.now()
+    quantity_data = pd.DataFrame(metrics).set_index('tick')
 
     print(f"Time per tick: {(end-start)/MAX_TICKS}")
-    print(quantity_data)
 
     # Portfolio summary
     print("\n=== Final Portfolio State ===")
-    print(f"Cash: {portfolio.cash:.2f}")
     print(f"PnL: {portfolio.pnl:.2f}")
 
+    analytics_df = prepare_analytics_data(quantity_data, products, market_data)
+    positions_df = pd.DataFrame(index=quantity_data.index)
     for product in products:
-        print(f"{product} quantity: {portfolio.quantity[product]}")
-
-    # Plotting
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12))
-    fig.suptitle("Trading Simulation Results")
-
-    # Plot PnL
-    quantity_data["PnL"].plot(ax=ax1, title="Portfolio PnL")
-    ax1.set_xlabel("Tick")
-    ax1.set_ylabel("PnL")
-
-    # Plot product quantities over time
-    for product in products:
-        quantity_data[f"{product}_quantity"].plot(ax=ax2, label=product)
-
-    ax2.set_title("Product Quantities")
-    ax2.set_xlabel("Tick")
-    ax2.set_ylabel("Quantity")
-    ax2.legend()
-
-    plt.tight_layout()
-    plt.show()
+        positions_df[product] = quantity_data[f"{product}_quantity"]
+    vis = Visualiser(dataframe=analytics_df, products=products, volume_data=positions_df)
+    vis.display_visualisation()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the trading simulation.")
-    parser.add_argument("--round", default="Round Data/Options/Option_round_test.csv", help="Main data file path")
+    parser.add_argument("--round", default="Round Data/Tutorial/tutorial.csv", help="Main data file path")
     parser.add_argument("--algo", default="examplealgo.py", help="Trading alngorithm path")
     args = parser.parse_args()
 
