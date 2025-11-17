@@ -2,7 +2,7 @@ from typing import Dict, List
 
 class Listing:
     """
-    A class to represent the 
+    A class to represent the
     """
     def __init__(self, orderbook: Dict[str, Dict[int, int]], product: str) -> None:
         self.buy_orders = orderbook["BUY"] #dict of {price: quantity} top is lowest price
@@ -49,4 +49,3 @@ class State:
         self.pos_limit = pos_limit
 
 
-        

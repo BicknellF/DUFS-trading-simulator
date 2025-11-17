@@ -150,6 +150,12 @@ def main(round_data_path: str, trading_algo: str) -> None:
     market_data = df.copy()
     portfolio = initialise_portfolio(products)
     pos_limit = {product: POSITION_LIMIT for product in products}
+    pos_limit["CASTLE_STOCKS"] = 30
+    pos_limit["JOHNS_STOCKS"] = 30
+    pos_limit["COLLINGWOOD_STOCKS"] = 30
+    pos_limit["CHADS_STOCKS"] = 30
+    pos_limit["CUTHS_STOCKS"] = 30
+    pos_limit["HATFIELD_STOCKS"] = 30
 
     # Import the Trader class
     Trader = import_trader(trading_algo)
@@ -209,7 +215,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the trading simulation.")
     parser.add_argument(
         "--round",
-        default="Round Data/Tutorial/tutorial.csv",
+        default="Round Data/Round_1/Round_1.csv",
         help="Main data file path",
     )
     parser.add_argument(
